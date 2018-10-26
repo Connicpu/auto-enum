@@ -1,0 +1,16 @@
+[package]
+name = "auto-enum"
+version = "0.1.0"
+authors = ["Connie Hilarides <conni_h@outlook.com>"]
+edition = "2015"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "0.15.14", features = ["full", "extra-traits"] }
+quote = "0.6.8"
+proc-macro2 = "0.4.20"
+
+[dev-dependencies]
+checked-enum = "0.1.0"
