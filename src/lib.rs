@@ -1,3 +1,40 @@
+//! Provides automatic enum implementations that are convenient for working with FFI
+//! 
+//! ```
+//! #[macro_use]
+//! extern crate auto_enum;
+//! extern crate checked_enum;
+//! 
+//! #[auto_enum(u32, checked)]
+//! pub enum SweepDirection {
+//!     CounterClockwise = 0,
+//!     Clockwise = 1,
+//! }
+//! 
+//! # fn main() {
+//! assert_eq!(SweepDirection::from_u32(0), Some(SweepDirection::CounterClockwise));
+//! # }
+//! ```
+//! 
+//! ```
+//! #[macro_use]
+//! extern crate auto_enum;
+//! 
+//! #[enum_flags(u32)]
+//! pub enum BitmapOptions {
+//!     TARGET = 0x1,
+//!     CANNOT_DRAW = 0x2,
+//!     CPU_READ = 0x4,
+//!     GDI_COMPATIBLE = 0x8,
+//! }
+//! 
+//! # fn main() {
+//! let flags = BitmapOptions::TARGET | BitmapOptions::GDI_COMPATIBLE;
+//! assert!(flags.is_set(BitmapOptions::TARGET));
+//! assert!(!flags.is_set(BitmapOptions::CPU_READ));
+//! # }
+//! ```
+
 #![recursion_limit = "1024"]
 
 #[macro_use]
