@@ -2,7 +2,13 @@
 name = "auto-enum"
 version = "0.1.0"
 authors = ["Connie Hilarides <conni_h@outlook.com>"]
+repository = "https://github.com/connicpu/auto-enum"
+license = "MIT"
 edition = "2015"
+description = """
+Provides attribute macros for building enums which are convenient
+for use with FFI, along with "enum" flags.
+"""
 
 [lib]
 proc-macro = true
