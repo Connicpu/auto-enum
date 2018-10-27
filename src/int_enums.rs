@@ -58,9 +58,9 @@ pub fn expand_int_enum(args: &AttributeArgs, input: &Item) -> Result<TokenStream
                 use self :: #name :: *;
                 match val {
                     #(
-                        #vdisc => Some(#vname),
+                        #vdisc => Option::Some(#vname),
                     )*
-                    _ => None,
+                    _ => Option::None,
                 }
             }
         }
