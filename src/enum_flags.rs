@@ -24,7 +24,7 @@ pub fn expand_enum_flags(args: &AttributeArgs, input: &Item) -> Result<TokenStre
         #[repr(transparent)]
         #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
         #( #extrameta )*
-        #vis struct #name ( #repr );
+        #vis struct #name ( pub #repr );
     };
 
     let fmeta = flags.iter().map(|Flag { meta, .. }| meta);
