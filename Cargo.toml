@@ -1,6 +1,6 @@
 [package]
 name = "auto-enum"
-version = "0.1.2"
+version = "0.2.0-alpha1"
 authors = ["Connie Hilarides <conni_h@outlook.com>"]
 repository = "https://github.com/connicpu/auto-enum"
 license = "MIT"
@@ -14,9 +14,9 @@ for use with FFI, along with "enum" flags.
 proc-macro = true
 
 [dependencies]
-syn = { version = "0.15.14", features = ["full", "extra-traits"] }
+syn = { version = "0.15.22", features = ["full", "extra-traits"] }
 quote = "0.6.8"
-proc-macro2 = "0.4.20"
+proc-macro2 = "0.4.24"
 
 [dev-dependencies]
 checked-enum = "0.1.0"

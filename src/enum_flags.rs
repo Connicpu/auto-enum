@@ -36,23 +36,27 @@ pub fn expand_enum_flags(args: &AttributeArgs, input: &Item) -> Result<TokenStre
     let rname2 = std::iter::repeat(name);
     let struct_impl = quote! {
         impl #name {
-            pub const NONE : #name = #name ( 0 );
             #(
                 #( #fmeta )*
                 #rvis const #fname : #rname = #rname2 ( #fdisc );
             )*
 
             #[inline(always)]
-            pub fn is_set(self, flag: Self) -> bool {
-                self & flag == flag
+            /// Test whether the given flags are set on this instance. Eqivalent to 
+            /// `value & flags == flags`.
+            pub fn is_set(self, flags: Self) -> bool {
+                self & flags == flags
             }
 
             #[inline(always)]
-            pub fn clear(&mut self, flag: Self) {
-                *self &= !flag;
+            /// Clear the given flags from this instance. Equivalent to `value &= !flags;`.
+            pub fn clear(&mut self, flags: Self) {
+                *self &= !flags;
             }
 
             #[inline(always)]
+            /// Checks whether any flags are set in the bitfield representation that don't exist
+            /// in the enumeration definition. Returns true if only valid flags are set.
             pub fn validate(self) -> bool {
                 const MASK: #repr = #mask as #repr;
                 self.0 & !MASK == 0
@@ -105,6 +109,13 @@ pub fn expand_enum_flags(args: &AttributeArgs, input: &Item) -> Result<TokenStre
             #[inline(always)]
             fn bitxor_assign(&mut self, rhs: Self) {
                 self.0 ^= rhs.0;
+            }
+        }
+        impl Default for #name {
+            #[inline(always)]
+            /// Defaults to no flags being set.
+            fn default() -> Self {
+                #name (0)
             }
         }
     };

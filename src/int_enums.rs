@@ -49,11 +49,14 @@ pub fn expand_int_enum(args: &AttributeArgs, input: &Item) -> Result<TokenStream
     let enum_impl = quote! {
         impl #name {
             #[inline(always)]
+            /// Convert this enum to its underlying value.
             #ispub fn #to_fn (self) -> #repr {
                 self as #repr
             }
 
             #[inline]
+            /// Attempt to convert this enum from an underlying value. Returns None if
+            /// the value is not valid for this enumeration.
             #ispub fn #from_fn (val: #repr) -> Option<Self> {
                 use self :: #name :: *;
                 match val {
