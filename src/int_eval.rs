@@ -1,23 +1,31 @@
 use std::ops::*;
 
-use syn::{BinOp, Expr, ExprBinary, ExprCast, ExprLit, ExprUnary, Lit, Type, UnOp};
+use syn::{
+    BinOp, Expr, ExprBinary, ExprCast, ExprLit, ExprPath, ExprUnary, Ident, Lit, Type, UnOp,
+};
 
-pub fn int_eval(expr: &Expr) -> Result<u64, String> {
-    Ok(match expr_eval(expr)? {
+pub trait Const {
+    fn ident(&self) -> &Ident;
+    fn value(&self) -> u64;
+}
+
+pub fn int_eval(expr: &Expr, consts: &[impl Const]) -> Result<u64, String> {
+    Ok(match expr_eval(expr, consts)? {
         Value::U64(u) => u,
         Value::I64(i) => i as u64,
         Value::F64(f) => f as u64,
     })
 }
 
-fn expr_eval(expr: &Expr) -> Result<Value, String> {
+fn expr_eval(expr: &Expr, consts: &[impl Const]) -> Result<Value, String> {
     match expr {
         Expr::Lit(expr) => lit_eval(expr),
-        Expr::Binary(expr) => bin_eval(expr),
-        Expr::Unary(expr) => un_eval(expr),
-        Expr::Cast(expr) => cast_eval(expr),
-        Expr::Paren(expr) => expr_eval(&expr.expr),
-        Expr::Group(expr) => expr_eval(&expr.expr),
+        Expr::Path(expr) => path_eval(expr, consts),
+        Expr::Binary(expr) => bin_eval(expr, consts),
+        Expr::Unary(expr) => un_eval(expr, consts),
+        Expr::Cast(expr) => cast_eval(expr, consts),
+        Expr::Paren(expr) => expr_eval(&expr.expr, consts),
+        Expr::Group(expr) => expr_eval(&expr.expr, consts),
         _ => return Err("Unsupported expression in flag value".into()),
     }
 }
@@ -31,9 +39,28 @@ fn lit_eval(expr: &ExprLit) -> Result<Value, String> {
     }
 }
 
-fn bin_eval(expr: &ExprBinary) -> Result<Value, String> {
-    let left = expr_eval(&expr.left)?;
-    let right = expr_eval(&expr.right)?;
+fn path_eval(expr: &ExprPath, consts: &[impl Const]) -> Result<Value, String> {
+    if expr.qself != None || expr.path.segments.len() != 1 {
+        return Err("Unsupported path item in constant expression".into());
+    }
+
+    let const_name = &expr.path.segments[0].ident;
+    for item in consts {
+        if item.ident() == const_name {
+            return Ok(Value::U64(item.value()));
+        }
+    }
+    
+    Err(format!(
+        "Could not find constant `{}` during const evaluation. Only constants defined \
+         above in the enum flags may be used.",
+        const_name
+    ))
+}
+
+fn bin_eval(expr: &ExprBinary, consts: &[impl Const]) -> Result<Value, String> {
+    let left = expr_eval(&expr.left, consts)?;
+    let right = expr_eval(&expr.right, consts)?;
 
     match expr.op {
         BinOp::Add(_) => left + right,
@@ -50,8 +77,8 @@ fn bin_eval(expr: &ExprBinary) -> Result<Value, String> {
     }
 }
 
-fn un_eval(expr: &ExprUnary) -> Result<Value, String> {
-    let value = expr_eval(&expr.expr)?;
+fn un_eval(expr: &ExprUnary, consts: &[impl Const]) -> Result<Value, String> {
+    let value = expr_eval(&expr.expr, consts)?;
 
     match expr.op {
         UnOp::Neg(_) => Ok(-value),
@@ -59,8 +86,8 @@ fn un_eval(expr: &ExprUnary) -> Result<Value, String> {
     }
 }
 
-fn cast_eval(expr: &ExprCast) -> Result<Value, String> {
-    let value = expr_eval(&expr.expr)?;
+fn cast_eval(expr: &ExprCast, consts: &[impl Const]) -> Result<Value, String> {
+    let value = expr_eval(&expr.expr, consts)?;
     Ok(match &*expr.ty {
         Type::Path(path) => {
             if path.path.segments.len() != 1 {
@@ -104,7 +131,7 @@ fn cast_eval(expr: &ExprCast) -> Result<Value, String> {
                 (Value::F64(v), "f64") => Value::F64(v as f64),
                 (Value::F64(v), "usize") => Value::U64(v as usize as u64),
                 (Value::F64(v), "isize") => Value::I64(v as isize as i64),
-                
+
                 _ => return Err("Invalid cast type".into()),
             }
         }

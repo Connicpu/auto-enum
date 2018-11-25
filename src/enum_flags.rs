@@ -69,7 +69,8 @@ pub fn expand_enum_flags(args: &AttributeArgs, input: &Item) -> Result<TokenStre
             type Output = Self;
             #[inline(always)]
             fn not(self) -> Self {
-                #name ( !self.0 )
+                const MASK: #repr = #mask as #repr;
+                #name ( (!self.0) & MASK )
             }
         }
         impl std::ops::BitAnd for #name {
@@ -162,6 +163,15 @@ struct Flag {
     disc: LitInt,
 }
 
+impl crate::int_eval::Const for Flag {
+    fn ident(&self) -> &Ident {
+        &self.name
+    }
+    fn value(&self) -> u64 {
+        self.disc.value()
+    }
+}
+
 fn parse_flags(input: &ItemEnum, meta: &MetaInfo) -> Result<Vec<Flag>, String> {
     let mut flags = Vec::new();
     let mut next_flag = 1;
@@ -175,7 +185,7 @@ fn parse_flags(input: &ItemEnum, meta: &MetaInfo) -> Result<Vec<Flag>, String> {
         }
 
         let value = match &var.discriminant {
-            Some((_, expr)) => int_eval(expr)?,
+            Some((_, expr)) => int_eval(expr, &flags)?,
             None => match next_flag {
                 0 => {
                     return Err("Integer overflow in flag calculation. Use a larger \
@@ -185,7 +195,11 @@ fn parse_flags(input: &ItemEnum, meta: &MetaInfo) -> Result<Vec<Flag>, String> {
                 flag => flag,
             },
         };
-        next_flag = meta.repr.truncate(value << 1);
+        next_flag = if value == 0 {
+            1
+        } else {
+            meta.repr.truncate(value << 1)
+        };
 
         flags.push(Flag {
             meta: var.attrs.clone(),
